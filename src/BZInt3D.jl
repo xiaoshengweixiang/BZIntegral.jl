@@ -101,9 +101,13 @@ function Quad3DRuleδ(Emesh,Kxmesh,Kymesh,Kzmesh,eF,iter=2)
         WQTetras[i,:] = QuadTetraδ(SVector{10}(EQTetras[i,:]),eF,iter)
     end
     for i in 1:size(QTetras,1)
-        mbar = mabar + effmi[i,:]*WQTetras[i,:]
+        for j in 1:size(WQTetra,2)
+             weight_mass = weight+WQTetras[i,j]
+        end
+        total_weight = total_weight + weight_mass
+        mbar = mabar + effmi[i,:]*weight_mass
     end
-    return mbar/sferimi
+    return mbar/total_weight
    """ Wmesh = zeros(typeof(float(eF)),size(Emesh)...)
     @views for i in 1:size(QTetras,1)
         Wmesh[QTetras[i,:]] += WQTetras[i,:]
