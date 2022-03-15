@@ -88,21 +88,85 @@ end
 """
 Recursive tetrahedron method for weight function W(k) = δ(eF-E(k))
 """
-function Quad3DRuleδ(Emesh,eF,iter=2)
+function Quad3DRuleδ(Emesh,Kxmesh,Kymesh,Kzmesh,eF,iter=2)
     QTetras = Mesh2QTetra(size(Emesh)...)
     EQTetras = Emesh[QTetras]
+    KxTetras = Kxmesh[QTetras]
+    KyTetras = Kymesh[QTetras]
+    KzTetras = Kzmesh[QTetras]
+    for i in 1:size(QTetras,1)
+       effm[i,:] = tetrainsert(KXTetra[i,:],KYTetra[i,:],KZTetra[i,:])
     WQTetras = zeros(size(EQTetras)...)
     @views @threads for i in 1:size(QTetras,1)
         WQTetras[i,:] = QuadTetraδ(SVector{10}(EQTetras[i,:]),eF,iter)
     end
-    
-    Wmesh = zeros(typeof(float(eF)),size(Emesh)...)
+    for i in 1:size(QTetras,1)
+        mbar = mabar + effmi[i,:]*WQTetras[i,:]
+    end
+    return mbar/sferimi
+   """ Wmesh = zeros(typeof(float(eF)),size(Emesh)...)
     @views for i in 1:size(QTetras,1)
         Wmesh[QTetras[i,:]] += WQTetras[i,:]
     end
-    return Wmesh/size(QTetras,1)*6
+    return Wmesh/size(QTetras,1)*6"""
 end
 
+function tetrainsert(kxmesh,kymesh,kzmesh,emesh)
+    Float64 b[]={0 for i in 1:10 end}
+    Float64 a[][]={{0for i in 1:10} for i in 1:10 end}
+    n=10
+    for i in 1:10
+         a[i][1]=kxmesh[i]*kxmesh[i]
+         a[i][2]=2*kxmesh[i]*kymesh[i]
+         a[i][3]=2*kxmesh[i]*kzmesh[i]
+         a[i][4]=kymesh[i]*kymesh[i]
+         a[i][5]=2*kymesh[i]*kzmesh[i]
+         a[i][6]=kzmesh[i]*kzmesh[i]
+         a[i][7]=kxmesh[i]
+         a[i][8]=kymesh[i]
+         a[i][9]=kzmesh[i]
+         a[i][10]=1
+         b[i]=emesh[i]
+     end
+     for k in 1:10
+         max=abs(a[k][k])
+         m=k
+         for i in k+1:n-1
+            if max < abs(a[i][k]):
+                max = abs(a[i][k])
+                m = i
+            end
+         end
+         if m != k:
+            for j in k:n-1
+                t = a[m][j]
+                a[m][j] = a[k][j]
+                a[k][j] = t
+            end
+            t = b[m]
+            b[m] = b[k]
+            b[k] = t
+         end    
+        for i in k + 1:n-1
+            for j in k+1:n-1
+                a[i][j] -= a[k][j] * a[i][k] / a[k][k]
+            end
+            b[i] -= b[k] * a[i][k] / a[k][k]
+            a[i][k] = 0
+        end
+    end
+    x[n - 1] = b[n - 1] / a[n - 1][n - 1]
+
+    for i in n-2:0:-1
+        sum = 0.0
+        for j in i + 1:n-1
+            sum += a[i][j] * x[j]
+        end
+        x[i] = (b[i] - sum) / a[i][i]
+    end
+    print(x)
+    return x
+end
 """
 Recursive tetrahedron method for weight function W(k) = δ(D(k)) Θ(eF-E(k))
 """
