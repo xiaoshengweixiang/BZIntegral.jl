@@ -157,7 +157,7 @@ function tetrainsert(kxmesh,kymesh,kzmesh,emesh)
     end
     x[n - 1] = b[n - 1] / a[n - 1][n - 1]
 
-    for i in n-2:0:-1
+    for i in n-2:-1:0
         sum = 0.0
         for j in i + 1:n-1
             sum += a[i][j] * x[j]
