@@ -112,8 +112,8 @@ function Quad3DRuleδ(Emesh,Kxmesh,Kymesh,Kzmesh,eF,iter=2)
 end
 
 function tetrainsert(kxmesh,kymesh,kzmesh,emesh)
-    Float64 b[]={0 for i in 1:10 end}
-    Float64 a[][]={{0for i in 1:10} for i in 1:10 end}
+    b[]={0.0 for i in 1:10}
+    a[][]={{0.0for i in 1:10} for i in 1:10}
     n=10
     for i in 1:10
          a[i][1]=kxmesh[i]*kxmesh[i]
