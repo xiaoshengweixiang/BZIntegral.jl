@@ -131,7 +131,7 @@ function Quad3DRuleδ(Emesh,Kxmesh,Kymesh,Kzmesh,eF,iter=2)
              weight_mass = weight_mass+WQTetras[i,j]
         end
         total_weight = total_weight + weight_mass
-        mbar = mabar + effm[i,:]*weight_mass
+        mbar = mbar + effm[i,:]*weight_mass
     end
     return mbar/total_weight
    """ Wmesh = zeros(typeof(float(eF)),size(Emesh)...)
