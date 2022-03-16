@@ -111,11 +111,16 @@ function Quad3DRuleδ(Emesh,Kxmesh,Kymesh,Kzmesh,eF,iter=2)
              B[j]=EQTetras[i,j]
                 end
            X=B \ A
-           for k in 1:3
-             for l in 1:3
-                effm[i][k,l]=X[3*k-3+l]
-           end
-           end
+              for k in 1:3
+                     effm[i][1,k]=X[k]
+              end
+              for k in 2:3
+                     effm[i][2,k]=X[k+2]
+              end
+              effm[i][3,3]=X[6]
+              effm[i][2,1]=effm[i][1,2]
+              effm[i][3,1]=effm[i][1,3]
+              effm[i][3,2]=effm[i][2,3]
            end
     WQTetras = zeros(size(EQTetras)...)
     @views @threads for i in 1:size(QTetras,1)
