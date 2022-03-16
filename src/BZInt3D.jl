@@ -110,7 +110,7 @@ function Quad3DRuleδ(Emesh,Kxmesh,Kymesh,Kzmesh,eF,iter=2)
              A[j,10]=1
              B[j]=EQTetras[i,j]
                 end
-           X=A \ B
+           X=B \ A
            for k in 1:3
              for l in 1:3
                 effm[i][k,l]=X[3*k-3+l]
