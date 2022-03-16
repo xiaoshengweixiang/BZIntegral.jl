@@ -94,12 +94,34 @@ function Quad3DRuleδ(Emesh,Kxmesh,Kymesh,Kzmesh,eF,iter=2)
     KxTetras = Kxmesh[QTetras]
     KyTetras = Kymesh[QTetras]
     KzTetras = Kzmesh[QTetras]
-    for i in 1:size(QTetras,1)
-       effm[i,:] = tetrainsert(KxTetra[i,:],KyTetra[i,:],KzTetra[i,:])
+    A=zeros(Float64,10,10)
+    B=zeros(Float64,10)
+    for i in 1:size(QTetras, 1)
+          for j in 1:10
+             A[j,1]=KxTetras[i,j]*KxTetras[i,j]
+             A[j,2]=2*KxTetras[i,j]*KyTetras[i,j]
+             A[j,3]=2*KxTetras[i,j]*KzTetras[i,j]
+             A[j,4]=KyTetras[i,j]*KyTetras[i,j]
+             A[j,5]=2*KyTetras[i,j]*KzTetras[i,j]
+             A[j,6]=KzTetras[i,j]*KzTetras[i,j]
+             A[j,7]=KxTetras[i,j]
+             A[j,8]=KyTetras[i,j]
+             A[j,9]=KzTetras[i,j]
+             A[j,10]=1
+             B[j]=EQTetras[i,j]
+                end
+           X=A \ B
+           for k in 1:3
+             for l in 1:3
+                effm[i][k,l]=X[3*k-3+l]
+           end
+           end
+           end
     WQTetras = zeros(size(EQTetras)...)
     @views @threads for i in 1:size(QTetras,1)
         WQTetras[i,:] = QuadTetraδ(SVector{10}(EQTetras[i,:]),eF,iter)
     end
+    weigt_mass=0.0
     for i in 1:size(QTetras,1)
         for j in 1:size(WQTetra,2)
              weight_mass = weight+WQTetras[i,j]
