@@ -95,7 +95,7 @@ function Quad3DRuleδ(Emesh,Kxmesh,Kymesh,Kzmesh,eF,iter=2)
     KyTetras = Kymesh[QTetras]
     KzTetras = Kzmesh[QTetras]
     for i in 1:size(QTetras,1)
-       effm[i,:] = tetrainsert(KXTetra[i,:],KYTetra[i,:],KZTetra[i,:])
+       effm[i,:] = tetrainsert(KxTetra[i,:],KyTetra[i,:],KzTetra[i,:])
     WQTetras = zeros(size(EQTetras)...)
     @views @threads for i in 1:size(QTetras,1)
         WQTetras[i,:] = QuadTetraδ(SVector{10}(EQTetras[i,:]),eF,iter)
