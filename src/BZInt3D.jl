@@ -89,13 +89,15 @@ end
 Recursive tetrahedron method for weight function W(k) = δ(eF-E(k))
 """
 function Quad3DRuleδ(Emesh,Kxmesh,Kymesh,Kzmesh,eF,iter=2)
-    QTetras = Mesh2QTetra(size(Emesh)...)
+    QTetras = BZIntegral.BZInt3D.Mesh2QTetra(size(Emesh)...)
     EQTetras = Emesh[QTetras]
     KxTetras = Kxmesh[QTetras]
     KyTetras = Kymesh[QTetras]
     KzTetras = Kzmesh[QTetras]
     A=zeros(Float64,10,10)
     B=zeros(Float64,10)
+    effa=[zeros(Float64,3,3) for i in 1:size(QTetras, 1)]
+    effm=[zeros(Float64,3,3) for i in 1:size(QTetras, 1)]
     for i in 1:size(QTetras, 1)
           for j in 1:10
              A[j,1]=KxTetras[i,j]*KxTetras[i,j]
@@ -112,19 +114,20 @@ function Quad3DRuleδ(Emesh,Kxmesh,Kymesh,Kzmesh,eF,iter=2)
                 end
            X=B \ A
               for k in 1:3
-                     effm[i][1,k]=X[k]
+                     effa[i][1,k]=X[k]
               end
               for k in 2:3
-                     effm[i][2,k]=X[k+2]
+                     effa[i][2,k]=X[k+2]
               end
-              effm[i][3,3]=X[6]
-              effm[i][2,1]=effm[i][1,2]
-              effm[i][3,1]=effm[i][1,3]
-              effm[i][3,2]=effm[i][2,3]
+              effa[i][3,3]=X[6]
+              effa[i][2,1]=effa[i][1,2]
+              effa[i][3,1]=effa[i][1,3]
+              effa[i][3,2]=effa[i][2,3]
+              effm[i]=inv(effa[i])
            end
     WQTetras = zeros(size(EQTetras)...)
-    @views @threads for i in 1:size(QTetras,1)
-        WQTetras[i,:] = QuadTetraδ(SVector{10}(EQTetras[i,:]),eF,iter)
+     for i in 1:size(QTetras,1)
+        WQTetras[i,:] = BZIntegral.BZInt3D.QuadTetraδ(SVector{10}(EQTetras[i,:]),eF,iter)
     end
        weight_mass=0.0
        total_weight=0.0
@@ -138,7 +141,9 @@ function Quad3DRuleδ(Emesh,Kxmesh,Kymesh,Kzmesh,eF,iter=2)
         total_weight = total_weight + weight_mass
         mbar = mbar + effm[i,:]*weight_mass
     end
-    return mbar/total_weight
+       result=mbar/total_weight
+       mstar=eigvals(result[1])
+    return result[1]
    """ Wmesh = zeros(typeof(float(eF)),size(Emesh)...)
     @views for i in 1:size(QTetras,1)
         Wmesh[QTetras[i,:]] += WQTetras[i,:]
