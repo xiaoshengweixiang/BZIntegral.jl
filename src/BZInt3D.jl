@@ -88,21 +88,125 @@ end
 """
 Recursive tetrahedron method for weight function W(k) = δ(eF-E(k))
 """
-function Quad3DRuleδ(Emesh,eF,iter=2)
-    QTetras = Mesh2QTetra(size(Emesh)...)
+function Quad3DRuleδ(Emesh,Kxmesh,Kymesh,Kzmesh,eF,iter=2)
+    QTetras = BZIntegral.BZInt3D.Mesh2QTetra(size(Emesh)...)
     EQTetras = Emesh[QTetras]
+    KxTetras = Kxmesh[QTetras]
+    KyTetras = Kymesh[QTetras]
+    KzTetras = Kzmesh[QTetras]
+    A=zeros(Float64,10,10)
+    B=zeros(Float64,10)
+    effa=[zeros(Float64,3,3) for i in 1:size(QTetras, 1)]
+    effm=[zeros(Float64,3,3) for i in 1:size(QTetras, 1)]
+    for i in 1:size(QTetras, 1)
+          for j in 1:10
+             A[j,1]=KxTetras[i,j]*KxTetras[i,j]
+             A[j,2]=2*KxTetras[i,j]*KyTetras[i,j]
+             A[j,3]=2*KxTetras[i,j]*KzTetras[i,j]
+             A[j,4]=KyTetras[i,j]*KyTetras[i,j]
+             A[j,5]=2*KyTetras[i,j]*KzTetras[i,j]
+             A[j,6]=KzTetras[i,j]*KzTetras[i,j]
+             A[j,7]=KxTetras[i,j]
+             A[j,8]=KyTetras[i,j]
+             A[j,9]=KzTetras[i,j]
+             A[j,10]=1
+             B[j]=EQTetras[i,j]
+                end
+           X=B \ A
+              for k in 1:3
+                     effa[i][1,k]=X[k]
+              end
+              for k in 2:3
+                     effa[i][2,k]=X[k+2]
+              end
+              effa[i][3,3]=X[6]
+              effa[i][2,1]=effa[i][1,2]
+              effa[i][3,1]=effa[i][1,3]
+              effa[i][3,2]=effa[i][2,3]
+              effm[i]=inv(effa[i])
+           end
     WQTetras = zeros(size(EQTetras)...)
-    @views @threads for i in 1:size(QTetras,1)
-        WQTetras[i,:] = QuadTetraδ(SVector{10}(EQTetras[i,:]),eF,iter)
+     for i in 1:size(QTetras,1)
+        WQTetras[i,:] = BZIntegral.BZInt3D.QuadTetraδ(SVector{10}(EQTetras[i,:]),eF,iter)
     end
-    
-    Wmesh = zeros(typeof(float(eF)),size(Emesh)...)
+       weight_mass=0.0
+       total_weight=0.0
+       mbar=effm[1,:]
+       mbar=mbar-mbar
+    for i in 1:size(QTetras,1)
+              weigt_mass=0.0
+        for j in 1:size(WQTetras,2)
+             weight_mass = weight_mass+WQTetras[i,j]
+        end
+        total_weight = total_weight + weight_mass
+        mbar = mbar + effm[i,:]*weight_mass
+    end
+       result=mbar/total_weight
+       mstar=eigvals(result[1])
+    return result[1]
+   """ Wmesh = zeros(typeof(float(eF)),size(Emesh)...)
     @views for i in 1:size(QTetras,1)
         Wmesh[QTetras[i,:]] += WQTetras[i,:]
     end
-    return Wmesh/size(QTetras,1)*6
+    return Wmesh/size(QTetras,1)*6"""
 end
 
+function tetrainsert(kxmesh,kymesh,kzmesh,emesh)
+    b[]={0.0 for i in 1:10}
+    a[][]={{0.0for i in 1:10} for i in 1:10}
+    n=10
+    for i in 1:10
+         a[i][1]=kxmesh[i]*kxmesh[i]
+         a[i][2]=2*kxmesh[i]*kymesh[i]
+         a[i][3]=2*kxmesh[i]*kzmesh[i]
+         a[i][4]=kymesh[i]*kymesh[i]
+         a[i][5]=2*kymesh[i]*kzmesh[i]
+         a[i][6]=kzmesh[i]*kzmesh[i]
+         a[i][7]=kxmesh[i]
+         a[i][8]=kymesh[i]
+         a[i][9]=kzmesh[i]
+         a[i][10]=1
+         b[i]=emesh[i]
+     end
+     for k in 1:10
+         max=abs(a[k][k])
+         m=k
+         for i in k+1:n-1
+            if max < abs(a[i][k]):
+                max = abs(a[i][k])
+                m = i
+            end
+         end
+         if m != k:
+            for j in k:n-1
+                t = a[m][j]
+                a[m][j] = a[k][j]
+                a[k][j] = t
+            end
+            t = b[m]
+            b[m] = b[k]
+            b[k] = t
+         end    
+        for i in k + 1:n-1
+            for j in k+1:n-1
+                a[i][j] -= a[k][j] * a[i][k] / a[k][k]
+            end
+            b[i] -= b[k] * a[i][k] / a[k][k]
+            a[i][k] = 0
+        end
+    end
+    x[n - 1] = b[n - 1] / a[n - 1][n - 1]
+
+    for i in n-2:-1:0
+        sum = 0.0
+        for j in i + 1:n-1
+            sum += a[i][j] * x[j]
+        end
+        x[i] = (b[i] - sum) / a[i][i]
+    end
+    print(x)
+    return x
+end
 """
 Recursive tetrahedron method for weight function W(k) = δ(D(k)) Θ(eF-E(k))
 """
